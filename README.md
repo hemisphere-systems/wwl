@@ -81,7 +81,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 ```
 
-The WWL algorithm automatically handles graphs of different sizes by using optimal transport to align their node representations. This makes it particularly useful for comparing molecular structures, social networks, or any graph data where size varies.
+The WWL algorithm automatically handles graphs of different sizes by using optimal transport to align their node representations.
+This makes it particularly useful for comparing molecular structures, social networks, or any graph data where size varies.
 
 Add to your `Cargo.toml`:
 
@@ -93,3 +94,8 @@ ndarray = "0.15"
 ```
 
 Requires Python WWL library to be installed and accessible.
+
+## Copyright
+
+This crate provides rust bindings to the original [Wasserstein Weisfeiler-Lehman Graph Kernel](https://github.com/BorgwardtLab/WWL) python library.
+All credit for the WWL algorithm and implementation goes to the original authors.
