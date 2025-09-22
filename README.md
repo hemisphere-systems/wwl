@@ -1,4 +1,4 @@
-<h1 align="center">`wwl`</h1>
+<h1 align="center"><code>wwl</code></h1>
 <div align="center">
   <strong>
     Rust bindings for Wasserstein Weisfeiler-Lehman Graph Kernels.
