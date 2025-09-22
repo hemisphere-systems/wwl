@@ -1,0 +1,18 @@
+[package]
+name = "wwl-rust"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "wwl_rust"
+crate-type = ["rlib"]
+
+[dependencies]
+pyo3 = { version = "0.26", features = ["auto-initialize"] }
+numpy = "0.26"
+ndarray = "0.16"
+petgraph = "0.8"
+
+[[example]]
+name = "basic_usage"
+path = "examples/basic_usage.rs"
