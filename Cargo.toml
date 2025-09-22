@@ -5,14 +5,19 @@ edition = "2021"
 
 [lib]
 name = "wwl_rust"
-crate-type = ["rlib"]
+crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 pyo3 = { version = "0.26", features = ["auto-initialize"] }
 numpy = "0.26"
-ndarray = "0.16"
+ndarray = "0.15"
 petgraph = "0.8"
+pythonize = "0.26"
 
 [[example]]
 name = "basic_usage"
 path = "examples/basic_usage.rs"
+
+[[example]]
+name = "graph_demo"
+path = "examples/graph_demo.rs"

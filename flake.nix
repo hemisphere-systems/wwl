@@ -10,83 +10,126 @@
     };
   };
 
-  outputs = { self, nixpkgs, flake-utils, rust-overlay }:
-    flake-utils.lib.eachDefaultSystem (system:
+  outputs =
+    {
+      self,
+      nixpkgs,
+      flake-utils,
+      rust-overlay,
+    }:
+    flake-utils.lib.eachDefaultSystem (
+      system:
       let
         overlays = [ (import rust-overlay) ];
         pkgs = import nixpkgs {
           inherit system overlays;
         };
-        
+
         rustToolchain = pkgs.rust-bin.stable.latest.default.override {
-          extensions = [ "rust-src" "rustfmt" "clippy" ];
+          extensions = [
+            "rust-src"
+            "rustfmt"
+            "clippy"
+          ];
         };
 
-        pythonEnv = pkgs.python3.withPackages (ps: with ps; [
-          numpy
-          scipy
-          scikit-learn
-          pip
-          setuptools
-          wheel
-          maturin
-          pyo3
-        ]);
+        # Build WWL package from PyPI
+        wwlPackage = pkgs.python3Packages.buildPythonPackage rec {
+          pname = "wwl";
+          version = "0.1.2";
 
-        pythonEnvWithWWL = pkgs.python3.withPackages (ps: with ps; [
-          numpy
-          scipy
-          scikit-learn
-          pip
-          setuptools
-          wheel
-          maturin
-          pyo3
-          cython
-          python-igraph
-          pot
-        ]);
+          src = pkgs.fetchPypi {
+            inherit pname version;
+            sha256 = "sha256-3yzh+NV97ohwbENQq5/yLUP7n+dZb2+vtAimWEWlw+Y=";
+          };
+
+          format = "setuptools";
+
+          doCheck = false; # Skip tests for faster builds
+
+          propagatedBuildInputs = with pkgs.python3Packages; [
+            cython
+            numpy
+            scipy
+            scikit-learn
+            python-igraph
+            pot
+          ];
+
+          meta = {
+            description = "Wasserstein Weisfeiler-Lehman Graph Kernels";
+            license = pkgs.lib.licenses.mit;
+          };
+        };
+
+        # Python environment with WWL and all dependencies
+        pythonEnv = pkgs.python3.withPackages (
+          ps: with ps; [
+            wwlPackage
+            numpy
+            scipy
+            scikit-learn
+            python-igraph
+            pot
+            cython
+          ]
+        );
 
       in
       {
+        # Export the WWL package for use in other flakes
+        packages.wwl = wwlPackage;
+        packages.python-env = pythonEnv;
+
         devShells.default = pkgs.mkShell {
           buildInputs = with pkgs; [
             rustToolchain
-            pythonEnvWithWWL
-            uv
+            pythonEnv
             pkg-config
             openssl
             maturin
+            # Add additional libraries that might be needed
+            stdenv.cc.cc.lib
+            zlib
+            libffi
           ];
 
           shellHook = ''
-            export PYTHON_SYS_EXECUTABLE=${pythonEnvWithWWL}/bin/python
-            export PYO3_PYTHON=${pythonEnvWithWWL}/bin/python
-            
-            # Install wwl package using uv/pip
-            echo "Installing wwl package..."
-            ${pythonEnvWithWWL}/bin/pip install wwl
-            
-            echo "WWL Rust development environment ready!"
-            echo "Python path: $(which python)"
-            echo "Rust path: $(which rustc)"
-            echo "Available tools: uv, maturin, cargo"
+            # Set up Python environment for PyO3
+            export PYTHON_SYS_EXECUTABLE=${pythonEnv}/bin/python
+            export PYO3_PYTHON=${pythonEnv}/bin/python
+
+            # Ensure library paths are set
+            export LD_LIBRARY_PATH="${pkgs.stdenv.cc.cc.lib}/lib:${pkgs.zlib}/lib:${pkgs.libffi}/lib:$LD_LIBRARY_PATH"
+
+            # Verify WWL is available
+            if ${pythonEnv}/bin/python -c "import wwl" 2>/dev/null; then
+              echo "✅ WWL package is available"
+            else
+              echo "⚠️  WWL package not found"
+            fi
+
+            echo ""
+            echo "🚀 WWL Rust development environment ready!"
+            echo "Python: ${pythonEnv}/bin/python"
+            echo "Rust: $(which rustc)"
+            echo "Tools: maturin, cargo"
           '';
         };
 
-        packages.default = pkgs.rustPlatform.buildRustPackage {
+        packages.rust-wwl = pkgs.rustPlatform.buildRustPackage {
           pname = "wwl-rust";
           version = "0.1.0";
-          
+
           src = ./.;
-          
+
           cargoLock = {
             lockFile = ./Cargo.lock;
           };
 
           nativeBuildInputs = with pkgs; [
             rustToolchain
-            pythonEnvWithWWL
+            pythonEnv
             maturin
             pkg-config
           ];
@@ -96,9 +139,11 @@
           ];
 
           preBuild = ''
-            export PYTHON_SYS_EXECUTABLE=${pythonEnvWithWWL}/bin/python
-            export PYO3_PYTHON=${pythonEnvWithWWL}/bin/python
+            export PYTHON_SYS_EXECUTABLE=${pythonEnv}/bin/python
+            export PYO3_PYTHON=${pythonEnv}/bin/python
           '';
         };
-      });
+      }
+    );
 }
+
