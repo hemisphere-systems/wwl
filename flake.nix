@@ -1,5 +1,5 @@
 {
-  description = "WWL Rust bindings with PyO3";
+  description = "WWL Rust Bindings";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -12,10 +12,10 @@
 
   outputs =
     {
-      self,
       nixpkgs,
       flake-utils,
       rust-overlay,
+      ...
     }:
     flake-utils.lib.eachDefaultSystem (
       system:
@@ -25,7 +25,7 @@
           inherit system overlays;
         };
 
-        rustToolchain = pkgs.rust-bin.stable.latest.default.override {
+        toolchain = pkgs.rust-bin.stable.latest.default.override {
           extensions = [
             "rust-src"
             "rustfmt"
@@ -33,8 +33,7 @@
           ];
         };
 
-        # Build WWL package from PyPI
-        wwlPackage = pkgs.python3Packages.buildPythonPackage rec {
+        wwl = pkgs.python3Packages.buildPythonPackage rec {
           pname = "wwl";
           version = "0.1.2";
 
@@ -45,7 +44,7 @@
 
           format = "setuptools";
 
-          doCheck = false; # Skip tests for faster builds
+          doCheck = false;
 
           propagatedBuildInputs = with pkgs.python3Packages; [
             cython
@@ -62,10 +61,9 @@
           };
         };
 
-        # Python environment with WWL and all dependencies
-        pythonEnv = pkgs.python3.withPackages (
+        env = pkgs.python3.withPackages (
           ps: with ps; [
-            wwlPackage
+            wwl
             numpy
             scipy
             scikit-learn
@@ -77,48 +75,35 @@
 
       in
       {
-        # Export the WWL package for use in other flakes
-        packages.wwl = wwlPackage;
-        packages.python-env = pythonEnv;
+        packages.python.wwl = wwl;
+        packages.python.env = env;
 
         devShells.default = pkgs.mkShell {
           buildInputs = with pkgs; [
-            rustToolchain
-            pythonEnv
+            toolchain
+            env
             pkg-config
             openssl
             maturin
-            # Add additional libraries that might be needed
             stdenv.cc.cc.lib
             zlib
             libffi
           ];
 
           shellHook = ''
-            # Set up Python environment for PyO3
-            export PYTHON_SYS_EXECUTABLE=${pythonEnv}/bin/python
-            export PYO3_PYTHON=${pythonEnv}/bin/python
+            export PYTHON_SYS_EXECUTABLE=${env}/bin/python
+            export PYO3_PYTHON=${env}/bin/python
 
-            # Ensure library paths are set
             export LD_LIBRARY_PATH="${pkgs.stdenv.cc.cc.lib}/lib:${pkgs.zlib}/lib:${pkgs.libffi}/lib:$LD_LIBRARY_PATH"
 
-            # Verify WWL is available
-            if ${pythonEnv}/bin/python -c "import wwl" 2>/dev/null; then
-              echo "✅ WWL package is available"
-            else
-              echo "⚠️  WWL package not found"
+            if ![ ${env}/bin/python -c "import wwl" 2>/dev/null ]; then
+              echo "wwl not found"
             fi
-
-            echo ""
-            echo "🚀 WWL Rust development environment ready!"
-            echo "Python: ${pythonEnv}/bin/python"
-            echo "Rust: $(which rustc)"
-            echo "Tools: maturin, cargo"
           '';
         };
 
-        packages.rust-wwl = pkgs.rustPlatform.buildRustPackage {
-          pname = "wwl-rust";
+        packages.wwl = pkgs.rustPlatform.buildRustPackage {
+          pname = "wwl";
           version = "0.1.0";
 
           src = ./.;
@@ -128,8 +113,8 @@
           };
 
           nativeBuildInputs = with pkgs; [
-            rustToolchain
-            pythonEnv
+            toolchain
+            env
             maturin
             pkg-config
           ];
@@ -139,11 +124,10 @@
           ];
 
           preBuild = ''
-            export PYTHON_SYS_EXECUTABLE=${pythonEnv}/bin/python
-            export PYO3_PYTHON=${pythonEnv}/bin/python
+            export PYTHON_SYS_EXECUTABLE=${env}/bin/python
+            export PYO3_PYTHON=${env}/bin/python
           '';
         };
       }
     );
 }
-
