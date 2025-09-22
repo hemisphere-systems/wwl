@@ -7,6 +7,6 @@ license = "MIT OR Apache-2.0"
 [dependencies]
 pyo3 = { version = "0.26", features = ["auto-initialize"] }
 numpy = "0.26"
-ndarray = "0.15"
+ndarray = "0.16"
 petgraph = "0.8"
 pythonize = "0.26"
