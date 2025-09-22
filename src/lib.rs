@@ -15,7 +15,7 @@
 use petgraph::{Graph, Undirected};
 
 use ndarray::Array2;
-use numpy::{PyArray2, PyArrayMethods, ToPyArray};
+use numpy::{PyArray2, PyArrayMethods};
 use pyo3::prelude::*;
 use pyo3::types::{PyAny, PyDict, PyList};
 use pythonize::pythonize;
@@ -293,9 +293,7 @@ impl WWLKernel {
 
                 let edges = PyArray2::from_vec2(py, &edges)?;
 
-                dbg!(&edges);
-
-                //let node_labels: Vec<Option<i32>> = graph.node_weights().cloned().collect();
+                let node_labels: Vec<Option<i32>> = graph.node_weights().cloned().collect();
 
                 // Create igraph - must specify directed=False for undirected graphs
                 let kwargs = PyDict::new(py);
@@ -305,19 +303,18 @@ impl WWLKernel {
 
                 let py_graph = igraph.getattr("Graph")?.call((), Some(&kwargs))?;
 
-                dbg!(&py_graph);
-
                 // Always set labels if any nodes have labels
-                //if node_labels.iter().any(|label| label.is_some()) {
-                //let labels: Vec<i32> =
-                //node_labels.iter().map(|label| label.unwrap_or(0)).collect();
+                if node_labels.iter().any(|label| label.is_some()) {
+                    let labels: Vec<i32> =
+                        node_labels.iter().map(|label| label.unwrap_or(0)).collect();
 
-                //// Use pythonize to ensure proper conversion
-                //let py_labels = pythonize(py, &labels)?;
+                    // Use pythonize to ensure proper conversion
+                    let py_labels = pythonize(py, &labels)?;
 
-                //let vs = py_graph.getattr("vs")?;
-                //vs.setattr("label", py_labels)?;
-                //}
+                    let vs = py_graph.getattr("vs")?;
+                    vs.set_item("label", py_labels)?;
+                }
+
 
                 Ok(py_graph.clone())
             })
