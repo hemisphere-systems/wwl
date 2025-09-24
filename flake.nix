@@ -49,10 +49,10 @@
           propagatedBuildInputs = with pkgs.python3Packages; [
             cython
             numpy
-            scipy
-            scikit-learn
-            python-igraph
             pot
+            python-igraph
+            scikit-learn
+            scipy
           ];
 
           meta = {
@@ -63,13 +63,13 @@
 
         env = pkgs.python3.withPackages (
           ps: with ps; [
-            wwl
-            numpy
-            scipy
-            scikit-learn
-            python-igraph
-            pot
             cython
+            numpy
+            pot
+            python-igraph
+            scikit-learn
+            scipy
+            wwl
           ]
         );
 
@@ -80,20 +80,19 @@
 
         devShells.default = pkgs.mkShell {
           buildInputs = with pkgs; [
-            toolchain
             env
-            pkg-config
-            openssl
-            maturin
-            stdenv.cc.cc.lib
-            zlib
             libffi
+            maturin
+            openssl
+            pkg-config
+            stdenv.cc.cc.lib
+            toolchain
+            zlib
           ];
 
           shellHook = ''
             export PYTHON_SYS_EXECUTABLE=${env}/bin/python
             export PYO3_PYTHON=${env}/bin/python
-
             export LD_LIBRARY_PATH="${pkgs.stdenv.cc.cc.lib}/lib:${pkgs.zlib}/lib:${pkgs.libffi}/lib:$LD_LIBRARY_PATH"
 
             if ![ ${env}/bin/python -c "import wwl" 2>/dev/null ]; then
@@ -113,10 +112,10 @@
           };
 
           nativeBuildInputs = with pkgs; [
-            toolchain
             env
             maturin
             pkg-config
+            toolchain
           ];
 
           buildInputs = with pkgs; [
