@@ -315,7 +315,6 @@ impl WWLKernel {
                     vs.set_item("label", py_labels)?;
                 }
 
-
                 Ok(py_graph.clone())
             })
             .collect();

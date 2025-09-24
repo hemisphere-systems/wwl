@@ -5,7 +5,7 @@ edition = "2021"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-pyo3 = { version = "0.26", features = ["auto-initialize"] }
+pyo3 = { version = "0.26", features = ["auto-initialize", "abi3"] }
 numpy = "0.26"
 ndarray = "=0.15"
 petgraph = "0.8"
