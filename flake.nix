@@ -50,7 +50,7 @@
             cython
             numpy
             pot
-            python-igraph
+            igraph
             scikit-learn
             scipy
           ];
