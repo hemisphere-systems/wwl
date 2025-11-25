@@ -279,25 +279,23 @@ impl WWLKernel {
         let py_graphs: PyResult<Vec<_>> = graphs
             .iter()
             .map(|graph| {
-                // Convert edges using pythonize for proper serialization
-                let edges = graph
+                // Convert edges to list of tuples for igraph
+                let edges: Vec<(usize, usize)> = graph
                     .edge_indices()
                     .map(|edge_idx| {
                         let (a, b) = graph.edge_endpoints(edge_idx).unwrap();
-                        let a = a.index();
-                        let b = b.index();
-
-                        vec![a, b]
+                        (a.index(), b.index())
                     })
-                    .collect::<Vec<Vec<usize>>>();
-
-                let edges = PyArray2::from_vec2(py, &edges)?;
+                    .collect();
 
                 let node_labels: Vec<Option<i32>> = graph.node_weights().cloned().collect();
 
                 // Create igraph - must specify directed=False for undirected graphs
                 let kwargs = PyDict::new(py);
-                kwargs.set_item("edges", edges)?;
+
+                // Use pythonize to convert edges to Python list of tuples
+                let py_edges = pythonize(py, &edges)?;
+                kwargs.set_item("edges", py_edges)?;
                 kwargs.set_item("n", graph.node_count())?;
                 kwargs.set_item("directed", false)?;
 
